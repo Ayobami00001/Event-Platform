@@ -1,6 +1,6 @@
 import { ApolloServer } from "@apollo/server";
 import { startServerAndCreateNextHandler } from "@as-integrations/next";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import { typeDefs } from "@/graphql/typeDefs";
 import { resolvers } from "@/graphql/resolvers";
@@ -27,7 +27,7 @@ const server = new ApolloServer<GraphQLContext>({
   resolvers,
 });
 
-const handler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(
+const apolloHandler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(
   server,
   {
     context: async (req) => {
@@ -50,10 +50,10 @@ const handler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(
   }
 );
 
-export async function GET(req: NextRequest) {
-  return handler(req);
+export async function GET(request: NextRequest): Promise<Response> {
+  return apolloHandler(request) as Promise<Response>;
 }
 
-export async function POST(req: NextRequest) {
-  return handler(req);
+export async function POST(request: NextRequest): Promise<Response> {
+  return apolloHandler(request) as Promise<Response>;
 }
