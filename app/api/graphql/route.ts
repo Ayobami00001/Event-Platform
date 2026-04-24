@@ -48,10 +48,6 @@ const apolloHandler =
     },
   });
 
-export async function GET(request: NextRequest): Promise<Response> {
-  return (await apolloHandler(request)) as Response;
-}
-
 export async function POST(request: NextRequest): Promise<Response> {
   return (await apolloHandler(request)) as Response;
 }
