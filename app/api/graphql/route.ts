@@ -27,9 +27,8 @@ const server = new ApolloServer<GraphQLContext>({
   resolvers,
 });
 
-const apolloHandler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(
-  server,
-  {
+const apolloHandler =
+  startServerAndCreateNextHandler<NextRequest, GraphQLContext>(server, {
     context: async (req) => {
       const authHeader = req.headers.get("authorization");
 
@@ -47,13 +46,12 @@ const apolloHandler = startServerAndCreateNextHandler<NextRequest, GraphQLContex
 
       return { user };
     },
-  }
-);
+  });
 
 export async function GET(request: NextRequest): Promise<Response> {
-  return apolloHandler(request) as Promise<Response>;
+  return (await apolloHandler(request)) as Response;
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  return apolloHandler(request) as Promise<Response>;
+  return (await apolloHandler(request)) as Response;
 }
