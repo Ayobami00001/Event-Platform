@@ -1,8 +1,11 @@
 import { ApolloServer } from "@apollo/server";
 import { startServerAndCreateNextHandler } from "@as-integrations/next";
+import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import { typeDefs } from "@/graphql/typeDefs";
 import { resolvers } from "@/graphql/resolvers";
+
+export const runtime = "nodejs";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -20,7 +23,7 @@ const server = new ApolloServer({
   resolvers,
 });
 
-const handler = startServerAndCreateNextHandler(server, {
+const handler = startServerAndCreateNextHandler<NextRequest>(server, {
   context: async (req) => {
     const authHeader = req.headers.get("authorization");
 
@@ -40,4 +43,10 @@ const handler = startServerAndCreateNextHandler(server, {
   },
 });
 
-export { handler as GET, handler as POST };
+export async function GET(req: NextRequest) {
+  return handler(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handler(req);
+}
