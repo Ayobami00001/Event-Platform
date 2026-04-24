@@ -51,8 +51,7 @@ export default function Navbar() {
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
-    return () =>
-      document.removeEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
 
   const publicLinks: NavItem[] = [
@@ -132,13 +131,7 @@ export default function Navbar() {
           >
             Concierge
           </Link>
-          <button
-  type="button"
-  onClick={() => alert("bottom button works")}
-  className="fixed bottom-6 right-6 z-[99999] rounded-full bg-red-600 px-4 py-3 text-white"
->
-  Test
-</button>
+          
 
           <div className="hidden items-center gap-8 md:flex">
             {links.map((item) => (
@@ -154,62 +147,56 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
-  {!token ? (
-    <>
-      <Link
-        href="/login"
-        className="hidden font-medium text-slate-600 transition-colors hover:text-indigo-500 sm:block"
-      >
-        Login
-      </Link>
+          {!token ? (
+            <>
+              <Link
+                href="/login"
+                className="hidden font-medium text-slate-600 transition-colors hover:text-indigo-500 sm:block"
+              >
+                Login
+              </Link>
 
-      <Link
-        href="/register"
-        className="hidden rounded-full bg-indigo-600 px-5 py-2.5 font-bold text-white transition hover:bg-indigo-700 sm:block"
-      >
-        Sign Up
-      </Link>
-    </>
-  ) : (
-    <div className="relative hidden sm:block" ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setDropdownOpen((prev) => !prev)}
-        className="flex items-center gap-3 rounded-full border border-indigo-100 bg-white px-2 py-2 shadow-sm transition hover:bg-slate-50"
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 font-bold text-indigo-700">
-          {getInitial()}
-        </div>
-        <div className="hidden text-left lg:block">
-          <p className="text-sm font-bold text-slate-800">
-            {role === "ORGANIZER"
-              ? "Organizer"
-              : role === "ADMIN"
-              ? "Admin"
-              : "User"}
-          </p>
-          <p className="text-xs text-slate-500">Account</p>
-        </div>
-        <span className="hidden text-slate-500 lg:block">▾</span>
-      </button>
-    </div>
-  )}
+              <Link
+                href="/register"
+                className="hidden rounded-full bg-indigo-600 px-5 py-2.5 font-bold text-white transition hover:bg-indigo-700 sm:block"
+              >
+                Sign Up
+              </Link>
+            </>
+          ) : (
+            <div className="relative hidden sm:block" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-3 rounded-full border border-indigo-100 bg-white px-2 py-2 shadow-sm transition hover:bg-slate-50"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 font-bold text-indigo-700">
+                  {getInitial()}
+                </div>
+                <div className="hidden text-left lg:block">
+                  <p className="text-sm font-bold text-slate-800">
+                    {role === "ORGANIZER"
+                      ? "Organizer"
+                      : role === "ADMIN"
+                        ? "Admin"
+                        : "User"}
+                  </p>
+                  <p className="text-xs text-slate-500">Account</p>
+                </div>
+                <span className="hidden text-slate-500 lg:block">▾</span>
+              </button>
+            </div>
+          )}
 
-  <button
-  type="button"
-  onClick={() => {
-    alert("click works");
-    setMenuOpen((prev) => !prev);
-  }}
-  onTouchStart={() => {
-    alert("touch works");
-  }}
-  className="relative z-[10001] flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 md:hidden"
-  aria-label="Toggle menu"
->
-  MENU
-</button>
-</div>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="relative z-[10001] flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 touch-manipulation md:hidden"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        </div>
       </div>
 
       {menuOpen && (
