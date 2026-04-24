@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import slugify from "slugify";
-import { connectDB } from "@/lib/db";
+import connectDB from "@/lib/db";
 import User from "@/models/User";
 import Event from "@/models/Event";
 import Booking from "@/models/Booking";

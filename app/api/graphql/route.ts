@@ -18,30 +18,37 @@ type JwtUser = {
   role: "USER" | "ORGANIZER" | "ADMIN";
 };
 
-const server = new ApolloServer({
+type GraphQLContext = {
+  user: JwtUser | null;
+};
+
+const server = new ApolloServer<GraphQLContext>({
   typeDefs,
   resolvers,
 });
 
-const handler = startServerAndCreateNextHandler<NextRequest>(server, {
-  context: async (req) => {
-    const authHeader = req.headers.get("authorization");
+const handler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(
+  server,
+  {
+    context: async (req) => {
+      const authHeader = req.headers.get("authorization");
 
-    let user: JwtUser | null = null;
+      let user: JwtUser | null = null;
 
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
 
-      try {
-        user = jwt.verify(token, JWT_SECRET) as JwtUser;
-      } catch {
-        user = null;
+        try {
+          user = jwt.verify(token, JWT_SECRET) as JwtUser;
+        } catch {
+          user = null;
+        }
       }
-    }
 
-    return { user };
-  },
-});
+      return { user };
+    },
+  }
+);
 
 export async function GET(req: NextRequest) {
   return handler(req);

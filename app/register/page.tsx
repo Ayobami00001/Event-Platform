@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
 import { graphqlRequest } from "@/lib/graphqlClient";
 
 const REGISTER_MUTATION = `
@@ -33,7 +33,7 @@ type RegisterResponse = {
   };
 };
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -63,9 +63,7 @@ export default function RegisterPage() {
       : "Join Concierge and start discovering amazing events worldwide";
   }, [selectedRole]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -291,9 +289,7 @@ export default function RegisterPage() {
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowConfirmPassword((prev) => !prev)
-                    }
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-700"
                   >
                     {showConfirmPassword ? "🙈" : "👁️"}
@@ -391,7 +387,7 @@ export default function RegisterPage() {
             <p className="text-sm text-slate-500">
               Already have an account?
               <Link
-                href={selectedRole === "ORGANIZER" ? "/login" : "/login"}
+                href="/login"
                 className="ml-1 font-bold text-indigo-600 hover:underline"
               >
                 Login
@@ -405,15 +401,29 @@ export default function RegisterPage() {
             © 2024 Concierge Event Platform. All rights reserved.
           </p>
           <div className="flex gap-8">
-            <button className="text-sm font-medium text-slate-500 hover:text-indigo-600">
+            <button
+              type="button"
+              className="text-sm font-medium text-slate-500 hover:text-indigo-600"
+            >
               Privacy Policy
             </button>
-            <button className="text-sm font-medium text-slate-500 hover:text-indigo-600">
+            <button
+              type="button"
+              className="text-sm font-medium text-slate-500 hover:text-indigo-600"
+            >
               Help Center
             </button>
           </div>
         </footer>
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }
