@@ -64,7 +64,7 @@ export default function AdminApprovalsPage() {
   useEffect(() => {
     const fetchPendingEvents = async () => {
       try {
-        const data = await graphqlRequest({
+        const data: any = await graphqlRequest({
           query: GET_PENDING_EVENTS,
         });
 
