@@ -3,11 +3,12 @@ type Event = {
   slug: string;
   title: string;
   category: string;
-  date: string;
-  location: string;
-  price: string;
-  image: string;
-  featured?: boolean;
+  startDate: string;
+  startTime?: string;
+  locationName?: string;
+  price?: number | null;
+  image?: string;
+  isFeatured?: boolean;
 };
 
 type EventCardProps = {
@@ -15,10 +16,11 @@ type EventCardProps = {
   featured?: boolean;
 };
 
-export default function EventCard({
-  event,
-  featured = false,
-}: EventCardProps) {
+export default function EventCard({ event, featured = false }: EventCardProps) {
+  const formattedDate = new Date(event.startDate).toISOString().split("T")[0];
+
+  const formattedPrice =
+    event.price === 0 || event.price == null ? "Free" : `$${event.price}`;
   if (featured) {
     return (
       <div className="group overflow-hidden rounded-3xl bg-white shadow-sm transition hover:shadow-xl">
@@ -30,7 +32,7 @@ export default function EventCard({
               className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
             />
             <div className="absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-indigo-700">
-              {event.date}
+              {formattedDate}
             </div>
           </div>
 
@@ -50,7 +52,7 @@ export default function EventCard({
 
             <div className="mb-6 flex items-center gap-2 text-sm text-slate-500">
               <span>📍</span>
-              <span>{event.location}</span>
+              <span>{event.locationName || "Online Event"}</span>
             </div>
 
             <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-6">
@@ -59,7 +61,7 @@ export default function EventCard({
                   Starting from
                 </p>
                 <p className="text-xl font-black text-indigo-700">
-                  {event.price}
+                  {formattedPrice}
                 </p>
               </div>
 
@@ -80,12 +82,12 @@ export default function EventCard({
     <div className="group overflow-hidden rounded-3xl bg-white shadow-sm transition hover:shadow-xl">
       <div className="relative m-2 h-64 overflow-hidden rounded-2xl">
         <img
-          src={event.image}
+          src={event.image || "/placeholder.jpg"}
           alt={event.title}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
         />
         <div className="absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-indigo-700">
-          {event.date}
+          {formattedDate}
         </div>
       </div>
 
@@ -100,11 +102,15 @@ export default function EventCard({
 
         <div className="mb-6 flex items-center gap-2 text-xs text-slate-500">
           <span>📍</span>
-          <span>{event.location}</span>
+          <span>{event.locationName || "Online Event"}</span>
+        </div>
+        <div className="mb-6 flex items-center gap-2 text-xs text-slate-500">
+          <span>🕒</span>
+          <span>{event.startTime || "Time TBA"}</span>
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-          <p className="text-lg font-black text-indigo-700">{event.price}</p>
+          <p className="text-lg font-black text-indigo-700">{formattedPrice}</p>
 
           <a
             href={`/events/${event.slug}`}

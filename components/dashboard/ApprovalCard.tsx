@@ -10,10 +10,17 @@ type ApprovalEvent = {
 };
 
 export default function ApprovalCard({
+  
   event,
+  onApprove,
+  onReject,
 }: {
   event: ApprovalEvent;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+
 }) {
+
   return (
     <div className="group flex flex-col gap-6 rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl">
       <div className="relative h-48 overflow-hidden rounded-2xl bg-slate-100">
@@ -71,11 +78,11 @@ export default function ApprovalCard({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button className="flex-1 rounded-2xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95">
+          <button onClick={() => onApprove(event.id)} className="flex-1 rounded-2xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95">
             Approve
           </button>
 
-          <button className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-red-600 transition-all hover:border-transparent hover:bg-red-50 active:scale-95">
+          <button onClick={() => onReject(event.id)} className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-red-600 transition-all hover:border-transparent hover:bg-red-50 active:scale-95">
             Reject
           </button>
         </div>

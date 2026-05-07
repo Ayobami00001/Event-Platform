@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { GET_MY_EVENTS_QUERY } from "@/graphql/queries";
 import { DELETE_EVENT_MUTATION } from "@/graphql/mutations";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 type EventItem = {
   id: string;
@@ -64,7 +63,7 @@ export default function MyEventsPage() {
 
   const handleDelete = async (eventId: string) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this event?"
+      "Are you sure you want to delete this event?",
     );
     if (!confirmDelete) return;
 
@@ -128,11 +127,8 @@ export default function MyEventsPage() {
   }, [events, search, statusFilter]);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <Sidebar role="organizer" />
-      <Topbar title="My Events" />
-
-      <div className="lg:ml-64 pt-24 px-6 pb-12 md:px-10">
+    <DashboardLayout role="organizer" title="My Events">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <nav className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
@@ -194,8 +190,7 @@ export default function MyEventsPage() {
             <span className="font-bold text-slate-900">
               {filteredEvents.length}
             </span>{" "}
-            of{" "}
-            <span className="font-bold text-slate-900">{events.length}</span>{" "}
+            of <span className="font-bold text-slate-900">{events.length}</span>{" "}
             events
           </div>
         </div>
@@ -257,7 +252,7 @@ export default function MyEventsPage() {
                       event.totalSeats > 0
                         ? Math.min(
                             100,
-                            Math.round((bookedSeats / event.totalSeats) * 100)
+                            Math.round((bookedSeats / event.totalSeats) * 100),
                           )
                         : 0;
 
@@ -310,7 +305,7 @@ export default function MyEventsPage() {
                         <td className="px-6 py-6">
                           <span
                             className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getStatusClass(
-                              event.status
+                              event.status,
                             )}`}
                           >
                             {event.status}
@@ -339,10 +334,14 @@ export default function MyEventsPage() {
 
                         <td className="px-6 py-6 text-right">
                           <div className="text-sm font-bold text-slate-900">
-                            {revenue > 0 ? `$${revenue.toLocaleString()}` : "$0"}
+                            {revenue > 0
+                              ? `$${revenue.toLocaleString()}`
+                              : "$0"}
                           </div>
                           <div className="mt-1 text-[10px] font-bold text-slate-400">
-                            {event.price && event.price > 0 ? "Paid Event" : "Free Event"}
+                            {event.price && event.price > 0
+                              ? "Paid Event"
+                              : "Free Event"}
                           </div>
                         </td>
 
@@ -394,6 +393,6 @@ export default function MyEventsPage() {
           )}
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }

@@ -1,13 +1,9 @@
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function AttendeesPage() {
   return (
-    <main className="bg-slate-50 min-h-screen">
-      <Sidebar role="organizer" />
-      <Topbar title="Attendees" />
-
-      <div className="ml-64 p-8">
+    <DashboardLayout role="organizer" title="Attendee Management">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <h1 className="text-3xl font-extrabold mb-6">
           Attendee Management
         </h1>
@@ -38,6 +34,6 @@ export default function AttendeesPage() {
           </table>
         </div>
       </div>
-    </main>
+</DashboardLayout>
   );
 }

@@ -7,11 +7,14 @@ export async function graphqlRequest<T>({
   variables?: Record<string, any>;
   token?: string;
 }): Promise<T> {
+  const authToken =
+    token || (typeof window !== "undefined" && localStorage.getItem("token"));
+
   const res = await fetch("/api/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     },
     body: JSON.stringify({
       query,

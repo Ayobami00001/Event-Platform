@@ -1,5 +1,5 @@
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
 
 const events = [
   {
@@ -20,11 +20,9 @@ const events = [
 
 export default function AdminEventsPage() {
   return (
-    <main className="min-h-screen bg-slate-50">
-      <Sidebar role="admin" />
-      <Topbar title="Events" />
+    <DashboardLayout title="events" role="admin">
 
-      <div className="ml-64 p-8">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
             Event Management
@@ -81,6 +79,6 @@ export default function AdminEventsPage() {
           </table>
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }

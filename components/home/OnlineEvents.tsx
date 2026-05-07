@@ -1,28 +1,48 @@
-const onlineEvents = [
-  {
-    title: "Remote Leadership Masterclass",
-    subtitle: "Monday, Oct 28 • Zoom",
-    price: "$20.00",
-    image:
-      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Creative Flow Live Stream",
-    subtitle: "Friday, Nov 1 • Twitch",
-    price: "Free",
-    image:
-      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "React 19 Deep Dive",
-    subtitle: "Wed, Nov 6 • YouTube Live",
-    price: "Free",
-    image:
-      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80",
-  },
-];
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { graphqlRequest } from "@/lib/graphqlClient";
+
+const GET_ONLINE_EVENTS = `
+  query GetOnlineEvents($limit: Int) {
+    getOnlineEvents(limit: $limit) {
+      id
+      title
+      slug
+      startDate
+      startTime
+      price
+      image
+    }
+  }
+`;
 
 export default function OnlineEvents() {
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const data = await graphqlRequest({
+          query: GET_ONLINE_EVENTS,
+          variables: { limit: 3 },
+        });
+
+        setEvents(data.getOnlineEvents);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-indigo-600 py-24 text-white">
       <div className="mx-auto max-w-screen-2xl px-6">
@@ -45,10 +65,11 @@ export default function OnlineEvents() {
           </div>
 
           <div className="flex gap-6 overflow-x-auto pb-4">
-            {onlineEvents.map((event) => (
+            {events.map((event: any) => (
               <div
-                key={event.title}
-                className="w-80 flex-shrink-0 rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-xl"
+                key={event.id}
+                onClick={() => router.push(`/events/${event.slug}`)}
+                className="w-80 flex-shrink-0 cursor-pointer rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-xl transition hover:-translate-y-1"
               >
                 <div className="mb-6 h-40 overflow-hidden rounded-2xl">
                   <img
@@ -59,10 +80,18 @@ export default function OnlineEvents() {
                 </div>
 
                 <h4 className="mb-2 text-xl font-bold">{event.title}</h4>
-                <p className="mb-4 text-sm text-indigo-100">{event.subtitle}</p>
+                <p className="mb-4 text-sm text-indigo-100">
+                  {new Date(event.startDate).toISOString().split("T")[0]}
+                  {" • "}
+                  {event.startTime || "Online Event"}
+                </p>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold">{event.price}</span>
+                  <span className="text-lg font-bold">
+                    {event.price === 0 || event.price == null
+                      ? "Free"
+                      : `$${event.price}`}
+                  </span>
                   <span>→</span>
                 </div>
               </div>

@@ -1,4 +1,14 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 export default function Hero() {
+  const router = useRouter();
+
+  const [search, setSearch] = useState("");
+  const [location, setLocation] = useState("");
+
   return (
     <section className="mx-auto max-w-screen-2xl px-6 py-12 pt-28 lg:py-20">
       <div className="relative flex min-h-[600px] items-center overflow-hidden rounded-3xl bg-slate-900">
@@ -21,6 +31,8 @@ export default function Hero() {
               <input
                 type="text"
                 placeholder="What are you looking for?"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full border-none bg-transparent text-slate-900 outline-none placeholder:text-slate-400"
               />
             </div>
@@ -30,11 +42,23 @@ export default function Hero() {
               <input
                 type="text"
                 placeholder="Where?"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
                 className="w-full border-none bg-transparent text-slate-900 outline-none placeholder:text-slate-400"
               />
             </div>
 
-            <button className="rounded-xl bg-indigo-600 px-8 py-4 font-bold text-white transition hover:bg-indigo-700">
+            <button
+              onClick={() => {
+                const params = new URLSearchParams();
+
+                if (search) params.append("search", search);
+                if (location) params.append("location", location);
+
+                router.push(`/events?${params.toString()}`);
+              }}
+              className="rounded-xl bg-indigo-600 px-8 py-4 font-bold text-white transition hover:bg-indigo-700"
+            >
               Find events
             </button>
           </div>

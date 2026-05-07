@@ -7,6 +7,7 @@ import Topbar from "@/components/dashboard/Topbar";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { GET_MY_EVENTS_QUERY } from "@/graphql/queries";
 import { UPDATE_EVENT_MUTATION } from "@/graphql/mutations";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 type EventMode = "ONLINE" | "PHYSICAL";
 type EventPricing = "FREE" | "PAID";
@@ -245,10 +246,7 @@ export default function EditEventPage() {
   }
 
   return (
-    <main className="bg-slate-50 min-h-screen">
-      <Sidebar role="organizer" />
-      <Topbar title="Edit Event" />
-
+    <DashboardLayout title="Edit Event" role="organizer">
       <div className="lg:ml-64 pt-24 p-6 md:p-8 max-w-5xl">
         <h1 className="text-3xl font-extrabold mb-6">Edit Event</h1>
 
@@ -454,6 +452,6 @@ export default function EditEventPage() {
           </button>
         </form>
       </div>
-    </main>
+</DashboardLayout>
   );
 }

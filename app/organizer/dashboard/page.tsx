@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 const stats = [
   {
@@ -73,13 +72,9 @@ const liveEvents = [
 
 export default function OrganizerDashboard() {
   const router = useRouter();
-
   return (
-    <main className="min-h-screen bg-slate-100">
-      <Sidebar role="organizer" />
-      <Topbar title="Organizer Dashboard" />
-
-      <div className="lg:ml-64 pt-24 p-6 md:p-8">
+    <DashboardLayout role="organizer" title="Organizer Dashboard">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
@@ -248,7 +243,7 @@ export default function OrganizerDashboard() {
                   key={event.title}
                   className="group flex items-center gap-4 rounded-2xl p-4 transition hover:bg-slate-50"
                 >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-slate-100 text-2xl">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-100 to-slate-100 text-2xl">
                     {index === 0 ? "🎷" : "💼"}
                   </div>
 
@@ -283,6 +278,6 @@ export default function OrganizerDashboard() {
           </div>
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }

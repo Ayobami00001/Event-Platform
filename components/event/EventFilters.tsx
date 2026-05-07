@@ -1,6 +1,24 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
 export default function EventFilters() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+const [selectedCategory, setSelectedCategory] = useState("");
+const [selectedDate, setSelectedDate] = useState("");
+const [priceRange, setPriceRange] = useState("");
+
+useEffect(() => {
+  setSelectedCategory(searchParams.get("category") || "");
+  setSelectedDate(searchParams.get("date") || "");
+  setPriceRange(searchParams.get("price") || "");
+}, [searchParams]);
+
   return (
-    <aside className="fixed left-0 hidden h-[calc(100vh-5rem)] w-64 overflow-y-auto bg-slate-50 px-4 py-6 lg:flex lg:flex-col">
+    <aside className="flex h-full flex-col overflow-y-auto bg-slate-50 px-4 py-6">
       <div className="mb-6 px-2">
         <h2 className="text-lg font-bold">Filters</h2>
         <p className="text-xs font-medium text-slate-500">Refine discovery</p>
@@ -18,15 +36,25 @@ export default function EventFilters() {
                 <label
                   key={item}
                   className={`flex cursor-pointer items-center gap-3 rounded-xl p-2 text-sm font-medium transition ${
-                    index === 1
-                      ? "bg-white text-indigo-700 shadow-sm"
-                      : "text-slate-500 hover:bg-slate-100"
+                    selectedCategory === item
+  ? "bg-indigo-50 text-indigo-700"
+  : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  <input type="checkbox" className="rounded" defaultChecked={index === 0} />
+                  <input
+                    type="radio"
+                    checked={
+                      item === "All Events"
+                        ? selectedCategory === ""
+                        : selectedCategory === item
+                    }
+                    onChange={() =>
+                      setSelectedCategory(item === "All Events" ? "" : item)
+                    }
+                  />
                   <span>{item}</span>
                 </label>
-              )
+              ),
             )}
           </div>
         </div>
@@ -41,15 +69,16 @@ export default function EventFilters() {
               (item, index) => (
                 <button
                   key={item}
+                  onClick={() => setSelectedDate(item)}
                   className={`rounded-lg px-3 py-2 text-left text-sm font-medium ${
-                    index === 1
+                    selectedDate === item
                       ? "bg-indigo-50 text-indigo-700"
                       : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   {item}
                 </button>
-              )
+              ),
             )}
           </div>
         </div>
@@ -64,6 +93,8 @@ export default function EventFilters() {
               type="range"
               min="0"
               max="1000"
+              value={priceRange}
+              onChange={(e) => setPriceRange(e.target.value)}
               className="h-1.5 w-full cursor-pointer accent-indigo-600"
             />
             <div className="mt-2 flex justify-between text-[10px] font-bold text-slate-400">
@@ -75,7 +106,26 @@ export default function EventFilters() {
       </div>
 
       <div className="mt-auto pt-6">
-        <button className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
+        <button
+          onClick={() => {
+            const params = new URLSearchParams();
+
+            if (selectedCategory) {
+              params.set("category", selectedCategory);
+            }
+
+            if (selectedDate) {
+              params.set("date", selectedDate);
+            }
+
+            if (priceRange) {
+              params.set("price", priceRange);
+            }
+
+            router.push(`/events?${params.toString()}`);
+          }}
+          className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
+        >
           Apply Filters
         </button>
       </div>

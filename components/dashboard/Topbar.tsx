@@ -17,13 +17,19 @@ function getRoleFromToken(token: string | null): UserRole {
   }
 }
 
-export default function Topbar({ title }: { title: string }) {
+export default function Topbar({
+  title,
+  onToggleSidebar,
+}: {
+  title: string;
+  onToggleSidebar: () => void;
+}) {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [role, setRole] = useState<UserRole>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
 
   useEffect(() => {
     const token =
@@ -45,12 +51,6 @@ export default function Topbar({ title }: { title: string }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const event = new CustomEvent("dashboard-sidebar-toggle", {
-      detail: { open: sidebarOpen },
-    });
-    window.dispatchEvent(event);
-  }, [sidebarOpen]);
 
   const getInitial = () => {
     if (role === "ADMIN") return "A";
@@ -91,7 +91,7 @@ export default function Topbar({ title }: { title: string }) {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setSidebarOpen((prev) => !prev)}
+            onClick={onToggleSidebar}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 lg:hidden"
             aria-label="Toggle sidebar"
           >

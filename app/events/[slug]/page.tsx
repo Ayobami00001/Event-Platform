@@ -46,7 +46,7 @@ type GetEventBySlugResponse = {
 
 export default function EventDetailsPage() {
   const params = useParams();
-  const slug = params.slug as string;
+  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +60,11 @@ export default function EventDetailsPage() {
           variables: { slug },
         });
 
-        setEvent(data.getEventBySlug || null);
+        if (!data || !data.getEventBySlug) {
+          setEvent(null);
+        } else {
+          setEvent(data.getEventBySlug);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to fetch event");
       } finally {
@@ -277,9 +281,7 @@ export default function EventDetailsPage() {
                   <p className="text-xs font-bold uppercase text-slate-500">
                     Refund Policy
                   </p>
-                  <p className="text-sm font-semibold">
-                    Full refund 48h prior
-                  </p>
+                  <p className="text-sm font-semibold">Full refund 48h prior</p>
                 </div>
               </div>
 

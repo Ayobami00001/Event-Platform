@@ -16,6 +16,12 @@ export const typeDefs = `#graphql
     PAID
   }
 
+  enum Currency {
+  USD
+  NGN
+  EUR
+}
+
   enum EventStatus {
     DRAFT
     PENDING
@@ -52,35 +58,38 @@ export const typeDefs = `#graphql
   }
 
   type Event {
-    id: ID!
-    title: String!
-    slug: String!
-    description: String!
-    category: String!
-    image: String
-    mode: EventMode!
-    pricing: EventPricing!
-    price: Float
-    currency: String
-    startDate: String!
-    endDate: String!
-    startTime: String
-    endTime: String
-    locationName: String
-    address: String
-    city: String
-    state: String
-    country: String
-    latitude: Float
-    longitude: Float
-    onlineLink: String
-    totalSeats: Int!
-    bookedSeats: Int!
-    availableSeats: Int!
-    status: EventStatus!
-    isFeatured: Boolean
-    organizer: User!
-  }
+  id: ID!
+  title: String!
+  slug: String!
+  description: String!
+  category: String!
+  image: String
+  mode: EventMode!
+  pricing: EventPricing!
+  price: Float
+  currency: Currency
+  startDate: String!
+  endDate: String!
+  startTime: String
+  endTime: String
+  locationName: String
+  address: String
+  city: String
+  state: String
+  country: String
+  latitude: Float
+  longitude: Float
+  onlineLink: String
+  totalSeats: Int!
+  bookedSeats: Int!
+  availableSeats: Int!
+  status: EventStatus!
+  isFeatured: Boolean
+  organizer: User!
+
+  createdAt: String!
+  updatedAt: String!
+}
 
   type Ticket {
     id: ID!
@@ -100,6 +109,7 @@ export const typeDefs = `#graphql
     paymentStatus: PaymentStatus!
     paymentReference: String
     ticket: Ticket
+
     createdAt: String!
     updatedAt: String!
   }
@@ -129,7 +139,7 @@ export const typeDefs = `#graphql
     mode: EventMode!
     pricing: EventPricing!
     price: Float
-    currency: String
+    currency: Currency
     startDate: String!
     endDate: String!
     startTime: String
@@ -153,7 +163,7 @@ export const typeDefs = `#graphql
     mode: EventMode
     pricing: EventPricing
     price: Float
-    currency: String
+    currency: Currency
     startDate: String
     endDate: String
     startTime: String
@@ -177,7 +187,19 @@ export const typeDefs = `#graphql
 
   type Query {
     me: User
-    getEvents: [Event!]!
+    getEvents(
+  search: String
+  category: String
+  location: String
+  date: String
+  price: String
+  sort: String
+  page: Int
+  limit: Int
+): [Event!]!
+    getUpcomingEvents(limit: Int): [Event!]!
+    getTodayEvents(limit: Int): [Event!]!
+    getOnlineEvents(limit: Int): [Event!]!
     getEventBySlug(slug: String!): Event
     getMyBookings: [Booking!]!
     getMySavedEvents: [Event!]!
@@ -201,6 +223,8 @@ export const typeDefs = `#graphql
 
     createBooking(input: CreateBookingInput!): Booking!
     cancelBooking(bookingId: ID!): Booking!
+
+    verifyPayment(bookingId: ID!, reference: String!): Booking!
 
     saveEvent(eventId: ID!): User!
     unsaveEvent(eventId: ID!): User!

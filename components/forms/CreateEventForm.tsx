@@ -20,6 +20,9 @@ type CreateEventResponse = {
 export default function CreateEventForm() {
   const router = useRouter();
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const [form, setForm] = useState({
     title: "",
     category: "",
@@ -47,7 +50,9 @@ export default function CreateEventForm() {
   const [success, setSuccess] = useState("");
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -85,6 +90,32 @@ export default function CreateEventForm() {
     return "";
   };
 
+  const uploadImage = async (): Promise<string> => {
+    if (!imageFile) return "";
+
+    const formData = new FormData();
+    formData.append("file", imageFile);
+
+    setUploadingImage(true);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!data.url) {
+        throw new Error("Image upload failed");
+      }
+
+      return data.url;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -104,11 +135,19 @@ export default function CreateEventForm() {
       return;
     }
 
+    setLoading(true);
+
+    let imageUrl = "";
+
+    if (imageFile) {
+      imageUrl = await uploadImage();
+    }
+
     const input = {
       title: form.title.trim(),
       category: form.category.trim(),
       description: form.description.trim(),
-      image: form.image.trim() || null,
+      image: imageUrl || null,
       mode: form.mode,
       pricing: form.pricing,
       price: form.pricing === "PAID" ? Number(form.price) : 0,
@@ -221,15 +260,21 @@ export default function CreateEventForm() {
 
       <div>
         <label className="mb-2 block text-sm font-medium text-slate-700">
-          Image URL
+          Event Image
         </label>
+
         <input
-          name="image"
-          value={form.image}
-          placeholder="https://example.com/event-image.jpg"
-          onChange={handleChange}
-          className="w-full p-3 border rounded-lg outline-none"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+          className="w-full p-3 border rounded-lg"
         />
+
+        {imageFile && (
+          <p className="text-sm text-slate-500 mt-2">
+            Selected: {imageFile.name}
+          </p>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

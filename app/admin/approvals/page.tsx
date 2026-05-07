@@ -1,57 +1,125 @@
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
-import ApprovalCard from "@/components/dashboard/ApprovalCard";
+"use client";
 
-const pendingEvents = [
-  {
-    id: "1",
-    title: "Neon Nights Concert",
-    category: "Concert",
-    mode: "Physical",
-    date: "Oct 24, 2026 • 09:00 PM",
-    organizer: "Alex Rivera",
-    image:
-      "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80",
-    status: "Pending Review",
-  },
-  {
-    id: "2",
-    title: "Creative Design Summit",
-    category: "Conference",
-    mode: "Online",
-    date: "Nov 03, 2026 • 11:00 AM",
-    organizer: "Maya Stone",
-    image:
-      "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80",
-    status: "Pending Review",
-  },
-  {
-    id: "3",
-    title: "Luxury Food Experience",
-    category: "Food",
-    mode: "Physical",
-    date: "Nov 10, 2026 • 06:30 PM",
-    organizer: "Daniel Reese",
-    image:
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
-    status: "Pending Review",
-  },
-];
+import ApprovalCard from "@/components/dashboard/ApprovalCard";
+import { useEffect, useState } from "react";
+import { graphqlRequest } from "@/lib/graphqlClient";
+import { useRouter } from "next/navigation";
+import { getUser } from "@/lib/auth";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
+const GET_PENDING_EVENTS = `
+  query {
+    getPendingEvents {
+      id
+      title
+      category
+      startDate
+      startTime
+      locationName
+      image
+      mode
+      organizer {
+        fullName
+      }
+    }
+  }
+`;
+
+const APPROVE_EVENT = `
+  mutation ApproveEvent($eventId: ID!) {
+    approveEvent(eventId: $eventId) {
+      id
+      status
+    }
+  }
+`;
+
+const REJECT_EVENT = `
+  mutation RejectEvent($eventId: ID!) {
+    rejectEvent(eventId: $eventId) {
+      id
+      status
+    }
+  }
+`;
 
 export default function AdminApprovalsPage() {
-  return (
-    <main className="min-h-screen bg-slate-50">
-      <Sidebar role="admin" />
-      <Topbar title="Approvals" />
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-      <div className="ml-64 space-y-10 p-8">
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (user.role !== "ADMIN") {
+      router.push("/");
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchPendingEvents = async () => {
+      try {
+        const data = await graphqlRequest({
+          query: GET_PENDING_EVENTS,
+        });
+
+        setEvents(data.getPendingEvents);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPendingEvents();
+  }, []);
+
+  if (loading) {
+    return <p className="p-8">Loading approvals...</p>;
+  }
+
+  const handleApprove = async (eventId: string) => {
+    try {
+      await graphqlRequest({
+        query: APPROVE_EVENT,
+        variables: { eventId },
+      });
+
+      // remove from UI
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleReject = async (eventId: string) => {
+    try {
+      await graphqlRequest({
+        query: REJECT_EVENT,
+        variables: { eventId },
+      });
+
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <DashboardLayout title="approvals" role="admin">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h1 className="text-4xl font-black tracking-tight text-slate-900">
               Event Approvals
             </h1>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
-              12 Pending Submissions
+              {events.length} Pending Submissions
             </span>
           </div>
 
@@ -62,11 +130,27 @@ export default function AdminApprovalsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:grid-cols-3">
-          {pendingEvents.map((event) => (
-            <ApprovalCard key={event.id} event={event} />
+          {events.map((event: any) => (
+            <ApprovalCard
+              key={event.id}
+              event={{
+                id: event.id,
+                title: event.title,
+                category: event.category,
+                mode: event.mode,
+                date: `${new Date(event.startDate).toLocaleDateString()} ${
+                  event.startTime || ""
+                }`,
+                organizer: event.organizer?.fullName || "Unknown",
+                image: event.image,
+                status: "Pending Review",
+              }}
+              onApprove={handleApprove}
+              onReject={handleReject}
+            />
           ))}
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }

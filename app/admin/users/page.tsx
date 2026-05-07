@@ -1,5 +1,7 @@
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
+
 
 const users = [
   {
@@ -30,11 +32,10 @@ const users = [
 
 export default function AdminUsersPage() {
   return (
-    <main className="min-h-screen bg-slate-50">
-      <Sidebar role="admin" />
-      <Topbar title="User Management" />
+    <DashboardLayout title="users" role="admin">
+      
 
-      <div className="ml-64 flex-1 space-y-8 p-10">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <div className="flex items-end justify-between">
           <div className="space-y-1">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
@@ -184,6 +185,6 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }

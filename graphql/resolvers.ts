@@ -83,17 +83,138 @@ export const resolvers = {
       return await User.findById(context.user.id).populate("savedEvents");
     },
 
-    getEvents: async () => {
+    getEvents: async (
+      _: unknown,
+      args: {
+        search?: string;
+        category?: string;
+        location?: string;
+        date?: string;
+        price?: string;
+        sort?: string;
+        page?: number;
+        limit?: number;
+      },
+    ) => {
       await connectDB();
-      return await Event.find({
-        status: { $in: ["APPROVED", "UPCOMING"] },
-      }).populate("organizer");
+
+      const query: any = {
+        status: "APPROVED",
+      };
+
+      if (args.search) {
+        query.title = {
+          $regex: args.search,
+          $options: "i",
+        };
+      }
+
+      if (args.category) {
+        query.category = args.category;
+      }
+
+      if (args.location) {
+        query.locationName = {
+          $regex: args.location,
+          $options: "i",
+        };
+      }
+
+      if (args.location) {
+        query.locationName = {
+          $regex: args.location,
+          $options: "i",
+        };
+      }
+
+      const now = new Date();
+
+      if (args.date === "Today") {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+
+        query.startDate = {
+          $gte: start.toISOString(),
+          $lte: end.toISOString(),
+        };
+      }
+
+      if (args.date === "This Week") {
+        const start = new Date();
+
+        const end = new Date();
+        end.setDate(now.getDate() + 7);
+
+        query.startDate = {
+          $gte: start.toISOString(),
+          $lte: end.toISOString(),
+        };
+      }
+
+      if (args.date === "This Weekend") {
+        const start = new Date();
+
+        const end = new Date();
+        end.setDate(now.getDate() + 2);
+
+        query.startDate = {
+          $gte: start.toISOString(),
+          $lte: end.toISOString(),
+        };
+      }
+
+      if (args.date === "Next Month") {
+        const start = new Date();
+
+        const end = new Date();
+        end.setMonth(now.getMonth() + 1);
+
+        query.startDate = {
+          $gte: start.toISOString(),
+          $lte: end.toISOString(),
+        };
+      }
+
+      if (args.price) {
+        query.price = {
+          $lte: Number(args.price),
+        };
+      }
+
+      let sortOption: any = { createdAt: -1 };
+
+      if (args.sort === "latest") {
+        sortOption = { createdAt: -1 };
+      }
+
+      if (args.sort === "oldest") {
+        sortOption = { createdAt: 1 };
+      }
+
+      if (args.sort === "price-low") {
+        sortOption = { price: 1 };
+      }
+
+      if (args.sort === "price-high") {
+        sortOption = { price: -1 };
+      }
+
+      const page = args.page || 1;
+      const limit = args.limit || 9;
+
+      const skip = (page - 1) * limit;
+
+      return await Event.find(query)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit)
+        .populate("organizer");
     },
 
-    getEventBySlug: async (
-      _parent: unknown,
-      args: { slug: string }
-    ) => {
+    getEventBySlug: async (_parent: unknown, args: { slug: string }) => {
       await connectDB();
       return await Event.findOne({ slug: args.slug }).populate("organizer");
     },
@@ -101,7 +222,7 @@ export const resolvers = {
     getMyBookings: async (
       _parent: unknown,
       _args: unknown,
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -115,7 +236,7 @@ export const resolvers = {
     getMySavedEvents: async (
       _parent: unknown,
       _args: unknown,
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -128,21 +249,21 @@ export const resolvers = {
     getMyEvents: async (
       _parent: unknown,
       _args: unknown,
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
       await connectDB();
 
       return await Event.find({ organizer: context.user.id }).populate(
-        "organizer"
+        "organizer",
       );
     },
 
     getPendingEvents: async (
       _parent: unknown,
       _args: unknown,
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user || context.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -156,7 +277,7 @@ export const resolvers = {
     getEventAttendees: async (
       _parent: unknown,
       args: { eventId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -180,7 +301,7 @@ export const resolvers = {
     getAllUsers: async (
       _parent: unknown,
       _args: unknown,
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user || context.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -194,7 +315,7 @@ export const resolvers = {
     getAllBookings: async (
       _parent: unknown,
       _args: unknown,
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user || context.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -204,42 +325,90 @@ export const resolvers = {
 
       return await Booking.find().populate("user").populate("event");
     },
+
+    getUpcomingEvents: async (_parent: unknown, args: { limit?: number }) => {
+      await connectDB();
+
+      const now = new Date().toISOString();
+      const limit = args.limit ?? 6;
+
+      return await Event.find({
+        status: "APPROVED",
+        startDate: { $gt: now },
+      })
+        .sort({ startDate: 1 })
+        .limit(limit)
+        .populate("organizer");
+    },
+
+    getTodayEvents: async (_parent: unknown, args: { limit?: number }) => {
+      await connectDB();
+
+      const today = new Date();
+
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const limit = args.limit ?? 4;
+
+      return await Event.find({
+        status: "APPROVED",
+        startDate: {
+          $gte: startOfDay.toISOString(),
+          $lte: endOfDay.toISOString(),
+        },
+      })
+        .sort({ startDate: 1 })
+        .limit(limit)
+        .populate("organizer");
+    },
+
+    getOnlineEvents: async (_parent: unknown, args: { limit?: number }) => {
+      await connectDB();
+
+      const limit = args.limit ?? 3;
+
+      return await Event.find({
+        status: "APPROVED",
+        mode: "ONLINE",
+      })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate("organizer");
+    },
   },
 
   Mutation: {
-    register: async (
-  _parent: unknown,
-  args: { input: RegisterInput }
-) => {
-  const { fullName, email, password, role } = args.input;
+    register: async (_parent: unknown, args: { input: RegisterInput }) => {
+      const { fullName, email, password, role } = args.input;
 
-  await connectDB();
+      await connectDB();
 
-  const existingUser = await User.findOne({ email });
-  if (existingUser) throw new Error("User already exists");
+      const existingUser = await User.findOne({ email });
+      if (existingUser) throw new Error("User already exists");
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await User.create({
-    fullName,
-    email,
-    password: hashedPassword,
-    role: role || "USER",
-  });
+      const user = await User.create({
+        fullName,
+        email,
+        password: hashedPassword,
+        role: role || "USER",
+      });
 
-  const token = jwt.sign(
-    { id: user._id.toString(), role: user.role },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+      const token = jwt.sign(
+        { id: user._id.toString(), role: user.role },
+        JWT_SECRET,
+        { expiresIn: "7d" },
+      );
 
-  return { token, user };
-},
+      return { token, user };
+    },
 
-    login: async (
-      _parent: unknown,
-      args: { input: LoginInput }
-    ) => {
+    login: async (_parent: unknown, args: { input: LoginInput }) => {
       const { email, password } = args.input;
 
       await connectDB();
@@ -253,7 +422,7 @@ export const resolvers = {
       const token = jwt.sign(
         { id: user._id.toString(), role: user.role },
         JWT_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: "7d" },
       );
 
       return { token, user };
@@ -262,7 +431,7 @@ export const resolvers = {
     createEvent: async (
       _parent: unknown,
       args: { input: CreateEventInput },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -306,7 +475,7 @@ export const resolvers = {
     updateEvent: async (
       _parent: unknown,
       args: { eventId: string; input: UpdateEventInput },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -342,7 +511,7 @@ export const resolvers = {
     deleteEvent: async (
       _parent: unknown,
       args: { eventId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -366,7 +535,7 @@ export const resolvers = {
     approveEvent: async (
       _parent: unknown,
       args: { eventId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user || context.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -386,7 +555,7 @@ export const resolvers = {
     rejectEvent: async (
       _parent: unknown,
       args: { eventId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user || context.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -406,11 +575,15 @@ export const resolvers = {
     createBooking: async (
       _parent: unknown,
       args: { input: { eventId: string; quantity: number } },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
       const { eventId, quantity } = args.input;
+
+      if (quantity < 1) {
+        throw new Error("Quantity must be at least 1");
+      }
 
       await connectDB();
 
@@ -421,36 +594,48 @@ export const resolvers = {
         throw new Error("This event is not available for booking");
       }
 
-      if (quantity < 1) {
-        throw new Error("Quantity must be at least 1");
-      }
+      // 🔥 ATOMIC UPDATE (critical fix)
+      const updatedEvent = await Event.findOneAndUpdate(
+        {
+          _id: eventId,
+          availableSeats: { $gte: quantity },
+        },
+        {
+          $inc: {
+            bookedSeats: quantity,
+            availableSeats: -quantity,
+          },
+        },
+        { new: true },
+      );
 
-      if (event.availableSeats < quantity) {
+      if (!updatedEvent) {
         throw new Error("Not enough seats available");
       }
 
       const totalPrice =
-        event.pricing === "PAID" ? (event.price || 0) * quantity : 0;
+        updatedEvent.pricing === "PAID"
+          ? (updatedEvent.price || 0) * quantity
+          : 0;
 
       const booking = await Booking.create({
         user: context.user.id,
         event: eventId,
         quantity,
         totalPrice,
-        bookingStatus: event.pricing === "FREE" ? "CONFIRMED" : "PENDING",
-        paymentStatus: event.pricing === "FREE" ? "PAID" : "UNPAID",
+        bookingStatus:
+          updatedEvent.pricing === "FREE" ? "CONFIRMED" : "PENDING",
+        paymentStatus: updatedEvent.pricing === "FREE" ? "PAID" : "UNPAID",
       });
 
-      event.bookedSeats += quantity;
-      event.availableSeats -= quantity;
-
-      if (event.availableSeats === 0) {
-        event.status = "SOLD_OUT";
+      // 🔥 Handle sold out after update
+      if (updatedEvent.availableSeats === 0) {
+        updatedEvent.status = "SOLD_OUT";
+        await updatedEvent.save();
       }
 
-      await event.save();
-
-      if (event.pricing === "FREE") {
+      // 🔥 Ticket only for free events
+      if (updatedEvent.pricing === "FREE") {
         await Ticket.create({
           booking: booking._id,
           ticketCode: generateTicketCode(),
@@ -465,7 +650,7 @@ export const resolvers = {
     cancelBooking: async (
       _parent: unknown,
       args: { bookingId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -508,7 +693,7 @@ export const resolvers = {
     saveEvent: async (
       _parent: unknown,
       args: { eventId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -518,7 +703,7 @@ export const resolvers = {
       if (!user) throw new Error("User not found");
 
       const alreadySaved = user.savedEvents.some(
-        (id) => id.toString() === args.eventId
+        (id) => id.toString() === args.eventId,
       );
 
       if (!alreadySaved) {
@@ -532,7 +717,7 @@ export const resolvers = {
     unsaveEvent: async (
       _parent: unknown,
       args: { eventId: string },
-      context: GraphQLContext
+      context: GraphQLContext,
     ) => {
       if (!context.user) throw new Error("Unauthorized");
 
@@ -542,7 +727,7 @@ export const resolvers = {
       if (!user) throw new Error("User not found");
 
       user.savedEvents = user.savedEvents.filter(
-        (id) => id.toString() !== args.eventId
+        (id) => id.toString() !== args.eventId,
       ) as typeof user.savedEvents;
 
       await user.save();

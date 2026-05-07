@@ -1,13 +1,9 @@
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function AdminDashboard() {
   return (
-    <main className="bg-slate-50 min-h-screen">
-      <Sidebar role="admin" />
-      <Topbar title="Admin Dashboard" />
-
-      <div className="ml-64 p-8">
+    <DashboardLayout title="dashboard" role="admin">
+      <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <h1 className="text-3xl font-extrabold mb-6">
           Platform Overview
         </h1>
@@ -34,6 +30,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }
