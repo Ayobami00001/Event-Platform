@@ -239,7 +239,10 @@ export default function EditEventPage() {
     return (
       <main className="bg-slate-50 min-h-screen">
         <Sidebar role="organizer" />
-        <Topbar title="Edit Event" />
+        <Topbar
+  title="Edit Event"
+  onToggleSidebar={() => {}}
+/>
         <div className="lg:ml-64 pt-24 p-6 md:p-8">Loading event...</div>
       </main>
     );
