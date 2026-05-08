@@ -30,7 +30,7 @@ export default function Upcoming() {
     setMounted(true);
     const fetchEvents = async () => {
       try {
-        const data = await graphqlRequest({
+        const data: any = await graphqlRequest({
           query: GET_UPCOMING_EVENTS,
           variables: { limit: 6 },
         });

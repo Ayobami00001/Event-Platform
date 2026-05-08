@@ -27,7 +27,7 @@ export default function OnlineEvents() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const data = await graphqlRequest({
+        const data: any = await graphqlRequest({
           query: GET_ONLINE_EVENTS,
           variables: { limit: 3 },
         });

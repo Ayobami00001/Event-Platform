@@ -30,7 +30,7 @@ export default function Trending() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const data = await graphqlRequest({
+        const data: any = await graphqlRequest({
           query: GET_TRENDING_EVENTS,
         });
 

@@ -1,3 +1,4 @@
+"use client";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 
@@ -5,8 +6,10 @@ export default function ProfilePage() {
   return (
     <main className="bg-slate-50 min-h-screen">
       <Sidebar role="user" />
-      <Topbar title="Profile" />
-
+      <Topbar
+  title="Dashboard"
+  onToggleSidebar={() => {}}
+/>
       <div className="ml-64 p-8 max-w-4xl">
         <div className="bg-white rounded-2xl p-8 shadow">
           <h1 className="text-3xl font-bold mb-4">

@@ -28,7 +28,7 @@ export default function TodayEvents() {
     setMounted(true);
     const fetchEvents = async () => {
       try {
-        const data = await graphqlRequest({
+        const data: any = await graphqlRequest({
           query: GET_TODAY_EVENTS,
           variables: { limit: 4 },
         });
