@@ -19,6 +19,7 @@ const GET_PENDING_EVENTS = `
       image
       mode
       organizer {
+        id
         fullName
       }
     }
@@ -142,6 +143,7 @@ export default function AdminApprovalsPage() {
                   event.startTime || ""
                 }`,
                 organizer: event.organizer?.fullName || "Unknown",
+                organizerId: event.organizer?.id || "",
                 image: event.image,
                 status: "Pending Review",
               }}

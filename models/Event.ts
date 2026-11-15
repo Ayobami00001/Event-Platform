@@ -89,9 +89,10 @@ const eventSchema = new Schema<IEvent>(
     },
 
     currency: {
-      type: String,
-      default: "USD",
-    },
+  type: String,
+  enum: ["NGN"],
+  default: "NGN",
+},
 
     startDate: {
       type: String,

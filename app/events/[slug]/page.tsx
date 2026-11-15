@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { GET_EVENT_BY_SLUG_QUERY } from "@/graphql/queries";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type EventDetails = {
   id: string;
@@ -37,6 +39,7 @@ type EventDetails = {
     id: string;
     fullName: string;
     email: string;
+    avatar?: string | null;
   };
 };
 
@@ -44,13 +47,42 @@ type GetEventBySlugResponse = {
   getEventBySlug: EventDetails | null;
 };
 
+// Event dates and times are interpreted in Nigeria time (UTC+01:00).
+// Keep this rule consistent with the server-side event listing and booking checks.
+function eventEndTimestamp(event: EventDetails): number | null {
+  const date = event.endDate?.slice(0, 10);
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(event.endTime ?? "")
+    ? event.endTime
+    : "23:59";
+  const timestamp = Date.parse(`${date}T${time}:00+01:00`);
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function eventImageUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  // Older records may contain a Markdown image link rather than a raw URL.
+  const markdown = value.match(/^\[[^\]]+\]\((https?:\/\/[^\s)]+)/);
+  return markdown?.[1] ?? value;
+}
+
 export default function EventDetailsPage() {
+  const router = useRouter();
   const params = useParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const updateClock = () => setNow(Date.now());
+    updateClock();
+    const interval = window.setInterval(updateClock, 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -73,6 +105,16 @@ export default function EventDetailsPage() {
     };
 
     if (slug) {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUserRole(parsedUser?.role ?? null);
+        } catch {
+          setUserRole(null);
+        }
+      }
+
       fetchEvent();
     }
   }, [slug]);
@@ -99,6 +141,26 @@ export default function EventDetailsPage() {
     );
   };
 
+  const endTimestamp = event ? eventEndTimestamp(event) : null;
+  const hasEnded = now !== null && endTimestamp !== null && now > endTimestamp;
+  const isArchived =
+    now !== null && endTimestamp !== null && now >= endTimestamp + 48 * 60 * 60 * 1000;
+  const canBook = Boolean(
+    event &&
+      now !== null &&
+      endTimestamp !== null &&
+      !hasEnded &&
+      event.availableSeats > 0 &&
+      ["APPROVED", "UPCOMING", "ONGOING"].includes(event.status)
+  );
+  const formattedPrice =
+    event?.pricing === "FREE"
+      ? "Free"
+      : new Intl.NumberFormat("en-NG", {
+          style: "currency",
+          currency: event?.currency || "NGN",
+        }).format(event?.price ?? 0);
+
   if (loading) {
     return (
       <main className="bg-slate-50 text-slate-900 min-h-screen">
@@ -113,13 +175,13 @@ export default function EventDetailsPage() {
     );
   }
 
-  if (error || !event) {
+  if (error || !event || isArchived) {
     return (
       <main className="bg-slate-50 text-slate-900 min-h-screen">
         <Navbar />
         <div className="mt-24 mx-auto max-w-7xl px-6 pb-24 lg:px-8">
           <div className="rounded-3xl border border-red-200 bg-red-50 p-10 text-red-600 shadow-sm">
-            {error || "Event not found"}
+            {isArchived ? "This event has ended and is no longer publicly available." : error || "Event not found"}
           </div>
         </div>
         <Footer />
@@ -132,29 +194,52 @@ export default function EventDetailsPage() {
       <Navbar />
 
       <div className="mt-20">
-        <EventDetailsHeader event={event} />
+        <div className="relative">
+          <EventDetailsHeader event={event} />
+          {hasEnded && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-4 pt-6">
+              <div className="rounded-xl bg-red-700 px-6 py-3 text-center text-lg font-extrabold tracking-widest text-white shadow-xl">
+                EVENT ENDED
+              </div>
+            </div>
+          )}
+        </div>
 
-        <section className="relative z-10 mx-auto -mt-20 grid max-w-7xl grid-cols-1 gap-12 px-6 pb-24 lg:grid-cols-12 lg:px-8">
+        <section className="relative z-10 mx-auto -mt-15 grid max-w-7xl grid-cols-1 gap-12 px-6 pb-24 lg:grid-cols-12 lg:px-8">
           <div className="space-y-12 lg:col-span-8">
             <div className="flex flex-wrap items-center justify-between gap-6 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-lg font-bold text-indigo-600 ring-2 ring-indigo-100">
-                  {event.organizer?.fullName?.charAt(0)?.toUpperCase() || "O"}
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-100 text-lg font-bold text-indigo-600 ring-2 ring-indigo-100">
+                  {event.organizer?.avatar ? (
+                    <img
+                      src={event.organizer.avatar}
+                      alt={event.organizer.fullName || "Organizer"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    event.organizer?.fullName?.charAt(0)?.toUpperCase() || "O"
+                  )}
                 </div>
 
                 <div>
                   <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
                     Organized by
                   </p>
-                  <h3 className="text-xl font-bold">
-                    {event.organizer?.fullName || "Unknown Organizer"}
-                  </h3>
+                  <Link
+                    href={`/organizer/${event.organizer.id}`}
+                    className="text-xl font-bold text-slate-900 hover:text-indigo-600 hover:underline"
+                  >
+                    {event.organizer.fullName}
+                  </Link>
                 </div>
               </div>
 
-              <button className="rounded-full border-2 border-indigo-600 px-6 py-2.5 font-bold text-indigo-600 transition hover:bg-indigo-600 hover:text-white">
-                Follow Organizer
-              </button>
+              <Link
+                href={`/organizer/${event.organizer.id}`}
+                className="rounded-full border-2 border-indigo-600 px-6 py-2.5 font-bold text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
+              >
+                View & Follow Organizer
+              </Link>
             </div>
 
             <div className="space-y-8 rounded-3xl bg-slate-100/60 p-4">
@@ -220,16 +305,23 @@ export default function EventDetailsPage() {
                 </div>
               </div>
 
-              <div className="h-[400px] overflow-hidden rounded-3xl border border-slate-200">
-                {event.image ? (
+              <div className="relative h-[400px] overflow-hidden rounded-3xl border border-slate-200">
+                {eventImageUrl(event.image) ? (
                   <img
-                    src={event.image}
+                    src={eventImageUrl(event.image)}
                     alt={event.title}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
                     No event image available
+                  </div>
+                )}
+                {hasEnded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/65">
+                    <span className="rounded-xl bg-red-700 px-6 py-3 text-xl font-extrabold tracking-widest text-white">
+                      EVENT ENDED
+                    </span>
                   </div>
                 )}
               </div>
@@ -244,9 +336,7 @@ export default function EventDetailsPage() {
                     Single Entry Ticket
                   </p>
                   <h2 className="text-4xl font-black">
-                    {event.pricing === "FREE"
-                      ? "Free"
-                      : `${event.currency || "$"}${event.price || 0}`}
+                    {formattedPrice}
                   </h2>
                 </div>
 
@@ -281,21 +371,36 @@ export default function EventDetailsPage() {
                   <p className="text-xs font-bold uppercase text-slate-500">
                     Refund Policy
                   </p>
-                  <p className="text-sm font-semibold">Full refund 48h prior</p>
+                  <p className="text-sm font-semibold">Contact the organizer for refund terms</p>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <a
-                  href={`/checkout/${event.id}`}
+                <button
+                  onClick={() => {
+                    if (!canBook) return;
+                    if (userRole === "ORGANIZER" || userRole === "ADMIN") {
+                      alert("Only users can book events.");
+                      return;
+                    }
+
+                    router.push(`/checkout/${event.id}`);
+                  }}
+                  disabled={!canBook}
                   className={`flex w-full items-center justify-center gap-2 rounded-2xl py-5 text-lg font-bold text-white transition ${
-                    event.availableSeats > 0
+                    canBook
                       ? "bg-indigo-600 hover:bg-indigo-700"
-                      : "cursor-not-allowed bg-slate-400 pointer-events-none"
+                      : "cursor-not-allowed bg-slate-400"
                   }`}
                 >
-                  {event.availableSeats > 0 ? "Buy Ticket" : "Sold Out"}
-                </a>
+                  {hasEnded
+                    ? "Event Ended"
+                    : event.availableSeats <= 0
+                    ? "Sold Out"
+                    : event.pricing === "FREE"
+                      ? "Register for Free"
+                      : "Buy Ticket"}
+                </button>
 
                 <button className="w-full rounded-2xl bg-slate-200 py-5 font-bold text-slate-800 transition hover:bg-slate-300">
                   Contact Host

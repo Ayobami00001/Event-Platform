@@ -6,6 +6,11 @@ export const typeDefs = `#graphql
     ADMIN
   }
 
+  enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
   enum EventMode {
     ONLINE
     PHYSICAL
@@ -16,9 +21,9 @@ export const typeDefs = `#graphql
     PAID
   }
 
-  enum Currency {
-  USD
+ enum Currency {
   NGN
+  USD
   EUR
 }
 
@@ -47,15 +52,46 @@ export const typeDefs = `#graphql
     REFUNDED
   }
 
-  type User {
-    id: ID!
-    fullName: String!
-    email: String!
-    role: UserRole!
-    avatar: String
-    phone: String
-    savedEvents: [Event!]
-  }
+ 
+
+type User {
+  id: ID!
+  fullName: String!
+  email: String!
+  role: UserRole!
+  avatar: String
+  phone: String
+  country: String
+  state: String
+  city: String
+  address: String
+  organizationName: String
+  organizationDescription: String
+  organizationLogo: String
+  organizationWebsite: String
+  organizerBio: String
+  status: UserStatus!
+  createdAt: String!
+  updatedAt: String!
+  savedEvents: [Event!]
+}
+
+input UpdateOrganizerProfileInput {
+  fullName: String
+  phone: String
+  avatar: String
+
+  country: String
+  state: String
+  city: String
+  address: String
+
+  organizationName: String
+  organizationDescription: String
+  organizationLogo: String
+  organizationWebsite: String
+  organizerBio: String
+}
 
   type Event {
   id: ID!
@@ -97,6 +133,7 @@ export const typeDefs = `#graphql
     ticketCode: String!
     qrCode: String
     issuedAt: String!
+    checkedInAt: String
   }
 
   type Booking {
@@ -109,6 +146,7 @@ export const typeDefs = `#graphql
     paymentStatus: PaymentStatus!
     paymentReference: String
     ticket: Ticket
+    tickets: [Ticket!]!
 
     createdAt: String!
     updatedAt: String!
@@ -118,6 +156,22 @@ export const typeDefs = `#graphql
     token: String!
     user: User!
   }
+
+  type OrganizerDashboard {
+  totalEvents: Int!
+  totalTicketsSold: Int!
+  totalRevenue: Float!
+
+  liveEvents: [OrganizerLiveEvent!]!
+}
+
+type OrganizerLiveEvent {
+  id: ID!
+  title: String!
+  status: String!
+  availableSeats: Int!
+  totalTickets: Int!
+}
 
   input RegisterInput {
     fullName: String!
@@ -184,9 +238,82 @@ export const typeDefs = `#graphql
     eventId: ID!
     quantity: Int!
   }
+    
+  input UpdateUserInput {
+  fullName: String
+  email: String
+  phone: String
+  avatar: String
+  role: UserRole
+  status: UserStatus
+}
+
+input UpdateProfileInput {
+  fullName: String
+  phone: String
+  avatar: String
+  country: String
+  state: String
+  city: String
+  address: String
+}
+
+  type PublicOrganizerEvent {
+  id: ID!
+  slug: String!
+  title: String!
+  description: String
+  image: String
+  startDate: String
+  city: String
+  country: String
+  mode: EventMode!
+  pricing: EventPricing!
+  price: Float
+  currency: Currency
+}
+
+type PublicOrganizerProfile {
+  id: ID!
+  fullName: String!
+  avatar: String
+  organizationName: String
+  organizationLogo: String
+  organizationDescription: String
+  organizationWebsite: String
+  organizerBio: String
+  city: String
+  state: String
+  country: String
+  createdAt: String
+  followerCount: Int!
+  isFollowing: Boolean!
+  events: [PublicOrganizerEvent!]!
+}
+
+type PaystackCheckout {
+  authorizationUrl: String!
+  reference: String!
+}
 
   type Query {
     me: User
+    getOrganizerDashboard: OrganizerDashboard!
+
+    getEventById(eventId: ID!): Event
+    
+    getAllEvents: [Event!]!
+
+    getUserById(userId: ID!): User!
+
+    devCheckResetEmail(email: String!): Boolean!
+
+    myOrganizerFollowers: [User!]!
+
+    getMyFollowedOrganizers: [User!]!
+
+    publicOrganizerProfile(organizerId: ID!): PublicOrganizerProfile!
+
     getEvents(
   search: String
   category: String
@@ -214,6 +341,21 @@ export const typeDefs = `#graphql
     register(input: RegisterInput!): AuthPayload!
     login(input: LoginInput!): AuthPayload!
 
+    devResetPassword(email: String!, newPassword: String!): String!
+
+    toggleUserStatus(userId: ID!): User!
+    updateUser(userId: ID!, input: UpdateUserInput!): User!
+    updateMyProfile(input: UpdateProfileInput!): User!
+    updateOrganizerProfile(input: UpdateOrganizerProfileInput!): User!
+
+    followOrganizer(organizerId: ID!): Boolean!
+unfollowOrganizer(organizerId: ID!): Boolean!
+
+changeMyPassword(
+  currentPassword: String!
+  newPassword: String!
+): String!
+
     createEvent(input: CreateEventInput!): Event!
     updateEvent(eventId: ID!, input: UpdateEventInput!): Event!
     deleteEvent(eventId: ID!): String!
@@ -224,10 +366,14 @@ export const typeDefs = `#graphql
     createBooking(input: CreateBookingInput!): Booking!
     cancelBooking(bookingId: ID!): Booking!
 
-    verifyPayment(bookingId: ID!, reference: String!): Booking!
+    verifyPayment(reference: String!): Booking!
+    initializePaystackPayment(bookingId: ID!): PaystackCheckout!
 
     saveEvent(eventId: ID!): User!
     unsaveEvent(eventId: ID!): User!
+
+    checkInTicket(ticketCode: String!): Ticket!
+
   }
 
 `;

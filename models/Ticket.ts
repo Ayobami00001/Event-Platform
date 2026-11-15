@@ -5,6 +5,8 @@ export interface ITicket extends Document {
   ticketCode: string;
   qrCode?: string;
   issuedAt: Date;
+  checkedInAt?: Date;
+  checkedInBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,8 +30,18 @@ const ticketSchema = new Schema<ITicket>(
       type: Date,
       default: Date.now,
     },
+    checkedInAt: {
+      type: Date,
+      default: null,
+    },
+
+    checkedInBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Ticket: Model<ITicket> =

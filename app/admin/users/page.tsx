@@ -1,40 +1,102 @@
+"use client";
+
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import { graphqlRequest } from "@/lib/graphqlClient";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
+const GET_ALL_USERS = `
+query GetAllUsers {
+  getAllUsers {
+    id
+    fullName
+    email
+    avatar
+    phone
+    role
+    status
+    createdAt
+  }
+}
+`;
 
-const users = [
-  {
-    id: "1",
-    name: "Elena Stone",
-    email: "elena@concierge.com",
-    role: "Organizer",
-    status: "Active",
-    joined: "Jan 12, 2026",
-  },
-  {
-    id: "2",
-    name: "Marcus Hale",
-    email: "marcus@indigo.com",
-    role: "Admin",
-    status: "Active",
-    joined: "Feb 03, 2026",
-  },
-  {
-    id: "3",
-    name: "Daniel Ross",
-    email: "daniel@guest.com",
-    role: "Attendee",
-    status: "Blocked",
-    joined: "Mar 19, 2026",
-  },
-];
+const TOGGLE_USER_STATUS = `
+mutation ToggleUserStatus($userId: ID!) {
+  toggleUserStatus(userId: $userId) {
+    id
+    status
+  }
+}
+`;
 
 export default function AdminUsersPage() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRole, setSelectedRole] = useState("ALL");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data: any = await graphqlRequest({
+          query: GET_ALL_USERS,
+        });
+        
+
+        setUsers(data.getAllUsers);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleStatus = async (userId: string) => {
+  try {
+    const data: any = await graphqlRequest({
+      query: TOGGLE_USER_STATUS,
+      variables: {
+        userId,
+      },
+    });
+
+    setUsers((prevUsers) =>
+      prevUsers.map((user) =>
+        user.id === userId
+          ? { ...user, status: data.toggleUserStatus.status }
+          : user
+      )
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+  const totalUsers = users.length;
+
+  const activeUsers = users.filter((user) => user.status === "ACTIVE").length;
+
+  const blockedUsers = users.filter((user) => user.status === "BLOCKED").length;
+
+  const admins = users.filter((user) => user.role === "ADMIN").length;
+
+  const filteredUsers = users.filter((user) => {
+    if (selectedRole === "ALL") return true;
+    return user.role === selectedRole;
+  });
+
+  if (loading) {
+    return (
+      <DashboardLayout title="users" role="admin">
+        <div className="p-10">Loading users...</div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="users" role="admin">
-      
-
       <div className="lg:ml-64 p-4 md:p-6 lg:p-8 max-w-5xl">
         <div className="flex items-end justify-between">
           <div className="space-y-1">
@@ -48,16 +110,47 @@ export default function AdminUsersPage() {
 
           <div className="flex gap-3">
             <div className="flex rounded-2xl bg-slate-100 p-1">
-              <button className="rounded-xl bg-white px-4 py-2 text-xs font-bold text-indigo-600 shadow-sm">
+              <button
+                onClick={() => setSelectedRole("ALL")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold ${
+                  selectedRole === "ALL"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500"
+                }`}
+              >
                 All Users
               </button>
-              <button className="px-4 py-2 text-xs font-semibold text-slate-500">
+
+              <button
+                onClick={() => setSelectedRole("ADMIN")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold ${
+                  selectedRole === "ADMIN"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500"
+                }`}
+              >
                 Admin
               </button>
-              <button className="px-4 py-2 text-xs font-semibold text-slate-500">
+
+              <button
+                onClick={() => setSelectedRole("ORGANIZER")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold ${
+                  selectedRole === "ORGANIZER"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500"
+                }`}
+              >
                 Organizer
               </button>
-              <button className="px-4 py-2 text-xs font-semibold text-slate-500">
+
+              <button
+                onClick={() => setSelectedRole("USER")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold ${
+                  selectedRole === "USER"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-slate-500"
+                }`}
+              >
                 Attendee
               </button>
             </div>
@@ -80,7 +173,7 @@ export default function AdminUsersPage() {
               </span>
             </div>
             <p className="text-sm font-medium text-slate-500">Total Users</p>
-            <h3 className="text-2xl font-extrabold">12,482</h3>
+            <h3 className="text-2xl font-extrabold">{totalUsers}</h3>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -88,23 +181,27 @@ export default function AdminUsersPage() {
               ⚡
             </div>
             <p className="text-sm font-medium text-slate-500">Active Now</p>
-            <h3 className="text-2xl font-extrabold">856</h3>
+            <h3 className="text-2xl font-extrabold">{activeUsers}</h3>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 rounded-xl bg-slate-100 p-2 text-slate-600 w-fit">
               ⏳
             </div>
-            <p className="text-sm font-medium text-slate-500">Pending Invites</p>
-            <h3 className="text-2xl font-extrabold">43</h3>
+            <p className="text-sm font-medium text-slate-500">
+              Administrators
+            </p>
+            <h3 className="text-2xl font-extrabold">{admins}</h3>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 rounded-xl bg-red-50 p-2 text-red-600 w-fit">
               ⛔
             </div>
-            <p className="text-sm font-medium text-slate-500">Blocked Accounts</p>
-            <h3 className="text-2xl font-extrabold">12</h3>
+            <p className="text-sm font-medium text-slate-500">
+              Blocked Accounts
+            </p>
+            <h3 className="text-2xl font-extrabold">{blockedUsers}</h3>
           </div>
         </div>
 
@@ -131,17 +228,22 @@ export default function AdminUsersPage() {
             </thead>
 
             <tbody className="divide-y divide-slate-200">
-              {users.map((user) => (
-                <tr key={user.id} className="transition-colors hover:bg-slate-50">
+              {filteredUsers.map((user) => (
+                <tr
+                  key={user.id}
+                  className="transition-colors hover:bg-slate-50"
+                >
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
                       <img
-                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80"
-                        alt={user.name}
+                        src={user.avatar || "/avatar.png"}
+                        alt={user.fullName}
                         className="h-12 w-12 rounded-xl object-cover"
                       />
                       <div>
-                        <p className="font-bold text-slate-900">{user.name}</p>
+                        <p className="font-bold text-slate-900">
+                          {user.fullName}
+                        </p>
                         <p className="text-sm text-slate-500">{user.email}</p>
                       </div>
                     </div>
@@ -156,7 +258,7 @@ export default function AdminUsersPage() {
                   <td className="px-6 py-5">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        user.status === "Active"
+                        user.status === "ACTIVE"
                           ? "bg-emerald-50 text-emerald-700"
                           : "bg-red-50 text-red-700"
                       }`}
@@ -166,16 +268,26 @@ export default function AdminUsersPage() {
                   </td>
 
                   <td className="px-6 py-5 text-sm font-medium text-slate-600">
-                    {user.joined}
+                    {new Date(Number(user.createdAt)).toLocaleDateString()}
                   </td>
 
                   <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-2">
-                      <button className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                      >
                         Edit
-                      </button>
-                      <button className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100">
-                        Block
+                      </Link>
+                      <button
+                        onClick={() => handleStatus(user.id)}
+                        className={`rounded-xl px-3 py-2 text-xs font-bold ${
+                          user.status === "ACTIVE"
+                            ? "bg-red-50 text-red-600 hover:bg-red-100"
+                            : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        }`}
+                      >
+                        {user.status === "ACTIVE" ? "Block" : "Unblock"}
                       </button>
                     </div>
                   </td>

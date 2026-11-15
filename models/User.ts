@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export type UserRole = "USER" | "ORGANIZER" | "ADMIN";
+export type UserStatus = "ACTIVE" | "BLOCKED";
 
 export interface IUser extends Document {
   fullName: string;
@@ -9,6 +10,17 @@ export interface IUser extends Document {
   role: UserRole;
   avatar?: string;
   phone?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  organizationName?: string;
+  organizationDescription?: string;
+  organizationLogo?: string;
+  organizationWebsite?: string;
+  organizerBio?: string;
+  followingOrganizers?: mongoose.Types.ObjectId[];
+  status: UserStatus;
   savedEvents: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +55,53 @@ const userSchema = new Schema<IUser>(
     phone: {
       type: String,
     },
+    country: {
+      type: String,
+      trim: true,
+    },
+    state: {
+      type: String,
+      trim: true,
+    },
+    city: {
+      type: String,
+      trim: true,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
+
+    organizationName: {
+      type: String,
+      trim: true,
+    },
+    organizationDescription: {
+      type: String,
+      trim: true,
+    },
+    organizationLogo: {
+      type: String,
+    },
+    organizationWebsite: {
+      type: String,
+      trim: true,
+    },
+    organizerBio: {
+      type: String,
+      trim: true,
+    },
+
+    followingOrganizers: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
+
+    status: {
+      type: String,
+      enum: ["ACTIVE", "BLOCKED"],
+      default: "ACTIVE",
+    },
     savedEvents: [
       {
         type: Schema.Types.ObjectId,
@@ -50,7 +109,7 @@ const userSchema = new Schema<IUser>(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const User: Model<IUser> =

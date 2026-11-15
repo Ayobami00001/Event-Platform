@@ -7,15 +7,15 @@ export default function EventFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-const [selectedCategory, setSelectedCategory] = useState("");
-const [selectedDate, setSelectedDate] = useState("");
-const [priceRange, setPriceRange] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [priceRange, setPriceRange] = useState("");
 
-useEffect(() => {
-  setSelectedCategory(searchParams.get("category") || "");
-  setSelectedDate(searchParams.get("date") || "");
-  setPriceRange(searchParams.get("price") || "");
-}, [searchParams]);
+  useEffect(() => {
+    setSelectedCategory(searchParams.get("category") || "");
+    setSelectedDate(searchParams.get("date") || "");
+    setPriceRange(searchParams.get("price") || "");
+  }, [searchParams]);
 
   return (
     <aside className="flex h-full flex-col overflow-y-auto bg-slate-50 px-4 py-6">
@@ -37,8 +37,8 @@ useEffect(() => {
                   key={item}
                   className={`flex cursor-pointer items-center gap-3 rounded-xl p-2 text-sm font-medium transition ${
                     selectedCategory === item
-  ? "bg-indigo-50 text-indigo-700"
-  : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   <input

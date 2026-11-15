@@ -19,6 +19,18 @@ const LOGIN_MUTATION = `
   }
 `;
 
+const CHECK_RESET_EMAIL = `
+  query DevCheckResetEmail($email: String!) {
+    devCheckResetEmail(email: $email)
+  }
+`;
+
+const RESET_PASSWORD_MUTATION = `
+  mutation DevResetPassword($email: String!, $newPassword: String!) {
+    devResetPassword(email: $email, newPassword: $newPassword)
+  }
+`;
+
 type PortalType = "USER" | "ORGANIZER";
 
 type LoginResponse = {
@@ -39,6 +51,19 @@ export default function LoginPage() {
   const [portal, setPortal] = useState<PortalType>("USER");
   const [showPassword, setShowPassword] = useState(false);
 
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+
+  const [resetStep, setResetStep] = useState<"email" | "password">("email");
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -54,9 +79,7 @@ export default function LoginPage() {
       : "Login to discover and book amazing events";
   }, [portal]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -89,6 +112,7 @@ export default function LoginPage() {
       const { token, user } = data.login;
 
       localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
       if (form.rememberMe) {
         localStorage.setItem("remembered_email", form.email.trim());
@@ -96,9 +120,10 @@ export default function LoginPage() {
         localStorage.removeItem("remembered_email");
       }
 
-      if (user.role === "ADMIN") {
-        router.push("/admin/dashboard");
-        return;
+      if (data.login.user.role === "ADMIN") {
+        throw new Error(
+          "Access denied: Admins must use the admin login portal.",
+        );
       }
 
       if (user.role === "ORGANIZER") {
@@ -106,11 +131,91 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/events");
+      router.push("/");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCheckResetEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage("");
+
+    if (!resetEmail.trim()) {
+      setResetMessage("Please enter your email.");
+      return;
+    }
+
+    setCheckingEmail(true);
+
+    try {
+      const data = await graphqlRequest<{
+        devCheckResetEmail: boolean;
+      }>({
+        query: CHECK_RESET_EMAIL,
+        variables: {
+          email: resetEmail.trim().toLowerCase(),
+        },
+      });
+
+      if (!data.devCheckResetEmail) {
+        setResetMessage("User does not exist.");
+        return;
+      }
+
+      setResetStep("password");
+    } catch (error) {
+      setResetMessage(
+        error instanceof Error ? error.message : "Unable to check email.",
+      );
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage("");
+
+    if (newPassword !== confirmPassword) {
+      setResetMessage("Passwords do not match.");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setResetMessage("Password must contain at least 8 characters.");
+      return;
+    }
+
+    setResettingPassword(true);
+
+    try {
+      const data = await graphqlRequest<{ devResetPassword: string }>({
+        query: RESET_PASSWORD_MUTATION,
+        variables: {
+          email: resetEmail.trim().toLowerCase(),
+          newPassword,
+        },
+      });
+
+      setResetMessage(data.devResetPassword);
+
+      setTimeout(() => {
+        setForgotPasswordOpen(false);
+        setResetStep("email");
+        setResetMessage("");
+      }, 1500);
+
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      setResetMessage(
+        error instanceof Error ? error.message : "Password reset failed.",
+      );
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -137,42 +242,33 @@ export default function LoginPage() {
             <p className="text-sm text-slate-500">{subtitle}</p>
           </div>
 
-          <div className="mb-8">
-            <p className="mb-3 ml-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Choose Portal
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 rounded-2xl bg-slate-100 p-1.5">
-              <button
-                type="button"
-                onClick={() => setPortal("USER")}
-                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                  portal === "USER"
-                    ? "bg-white text-indigo-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+          <div className="mb-8 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            {/* Shield icon */}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
+              <svg
+                className="h-5 w-5 text-indigo-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.8}
+                stroke="currentColor"
               >
-                Continue as User
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPortal("ORGANIZER")}
-                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                  portal === "ORGANIZER"
-                    ? "bg-white text-indigo-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Continue as Organizer
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                />
+              </svg>
             </div>
 
-            <p className="mt-3 text-xs text-slate-500">
-              {portal === "ORGANIZER"
-                ? "For hosts, event managers, and admins."
-                : "For attendees exploring and booking events."}
-            </p>
+            {/* Text */}
+            <div>
+              <p className="text-sm font-semibold text-slate-700">
+                Secure & encrypted login
+              </p>
+              <p className="text-xs text-slate-400">
+                Your data is protected with 256-bit SSL encryption
+              </p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -250,6 +346,12 @@ export default function LoginPage() {
 
               <button
                 type="button"
+                onClick={() => {
+                  setResetEmail(form.email);
+                  setResetMessage("");
+                  setResetStep("email");
+                  setForgotPasswordOpen(true);
+                }}
                 className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
               >
                 Forgot password?
@@ -271,8 +373,8 @@ export default function LoginPage() {
                 {loading
                   ? "Logging in..."
                   : portal === "ORGANIZER"
-                  ? "Login to Organizer Portal"
-                  : "Login"}
+                    ? "Login to Organizer Portal"
+                    : "Login"}
               </span>
               <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-white/10" />
             </button>
@@ -310,7 +412,11 @@ export default function LoginPage() {
           <p className="text-sm text-slate-500">
             Don’t have an account?
             <Link
-              href={portal === "ORGANIZER" ? "/register?role=organizer" : "/register"}
+              href={
+                portal === "ORGANIZER"
+                  ? "/register?role=organizer"
+                  : "/register"
+              }
               className="ml-1 font-bold text-indigo-600 hover:underline"
             >
               Sign up
@@ -335,6 +441,169 @@ export default function LoginPage() {
           </div>
         </footer>
       </div>
+
+      {forgotPasswordOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="forgot-password-title"
+            className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl"
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <h2
+                id="forgot-password-title"
+                className="text-2xl font-extrabold text-slate-900"
+              >
+                {resetStep === "email"
+                  ? "Forgot Password?"
+                  : "Set New Password"}
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => setForgotPasswordOpen(false)}
+                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="mb-6 text-sm text-slate-500">
+              {resetStep === "email"
+                ? "Enter your registered email address to start account recovery."
+                : "Enter and confirm your new password."}
+            </p>
+
+            {resetStep === "email" && (
+              <form onSubmit={handleCheckResetEmail} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="resetEmail"
+                    className="mb-2 block text-sm font-semibold text-slate-700"
+                  >
+                    Email Address
+                  </label>
+
+                  <input
+                    id="resetEmail"
+                    type="email"
+                    required
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="Enter your registered email"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
+
+                {resetMessage && (
+                  <p
+                    role="status"
+                    className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-700"
+                  >
+                    {resetMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={checkingEmail}
+                  className="w-full rounded-2xl bg-indigo-600 py-3 font-bold text-white disabled:opacity-50"
+                >
+                  {checkingEmail ? "Checking..." : "Continue"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(false)}
+                  className="w-full text-sm font-semibold text-slate-500 hover:text-indigo-600"
+                >
+                  Back to Login
+                </button>
+              </form>
+            )}
+
+            {resetStep === "password" && (
+              <form onSubmit={handleResetPassword} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="newPassword"
+                    className="mb-2 block text-sm font-semibold text-slate-700"
+                  >
+                    New Password
+                  </label>
+
+                  <input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    required
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="confirmPassword"
+                    className="mb-2 block text-sm font-semibold text-slate-700"
+                  >
+                    Confirm New Password
+                  </label>
+
+                  <input
+                    id="confirmPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={showNewPassword}
+                    onChange={(e) => setShowNewPassword(e.target.checked)}
+                  />
+                  Show passwords
+                </label>
+
+                {resetMessage && (
+                  <p
+                    role="status"
+                    className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-700"
+                  >
+                    {resetMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={resettingPassword}
+                  className="w-full rounded-2xl bg-indigo-600 py-3 font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {resettingPassword ? "Resetting..." : "Reset Password"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setResetStep("email")}
+                  className="w-full text-sm font-semibold text-slate-500 hover:text-indigo-600"
+                >
+                  Back to Email
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

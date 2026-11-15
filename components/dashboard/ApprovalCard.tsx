@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type ApprovalEvent = {
   id: string;
   title: string;
@@ -5,12 +7,12 @@ type ApprovalEvent = {
   mode: string;
   date: string;
   organizer: string;
+  organizerId: string;
   image: string;
   status: string;
 };
 
 export default function ApprovalCard({
-  
   event,
   onApprove,
   onReject,
@@ -18,9 +20,7 @@ export default function ApprovalCard({
   event: ApprovalEvent;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
-
 }) {
-
   return (
     <div className="group flex flex-col gap-6 rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl">
       <div className="relative h-48 overflow-hidden rounded-2xl bg-slate-100">
@@ -69,27 +69,41 @@ export default function ApprovalCard({
           />
           <div>
             <p className="text-xs text-slate-500">Organized by</p>
-            <p className="text-sm font-bold text-slate-900">{event.organizer}</p>
+            <p className="text-sm font-bold text-slate-900">
+              {event.organizer}
+            </p>
           </div>
 
-          <button className="ml-auto text-xs font-bold text-indigo-600 hover:underline">
+          <Link
+            href={`/organizers/${event.organizerId}`}
+            className="ml-auto text-xs font-bold text-indigo-600 hover:underline"
+          >
             View Profile
-          </button>
+          </Link>
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button onClick={() => onApprove(event.id)} className="flex-1 rounded-2xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95">
+          <button
+            onClick={() => onApprove(event.id)}
+            className="flex-1 rounded-2xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
+          >
             Approve
           </button>
 
-          <button onClick={() => onReject(event.id)} className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-red-600 transition-all hover:border-transparent hover:bg-red-50 active:scale-95">
+          <button
+            onClick={() => onReject(event.id)}
+            className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold text-red-600 transition-all hover:border-transparent hover:bg-red-50 active:scale-95"
+          >
             Reject
           </button>
         </div>
 
-        <button className="w-full text-center text-sm font-bold text-slate-500 hover:text-indigo-600">
+        <Link
+          href={`/admin/approvals/${event.id}`}
+          className="block w-full text-center text-sm font-bold text-slate-500 hover:text-indigo-600"
+        >
           View Full Submission
-        </button>
+        </Link>
       </div>
     </div>
   );

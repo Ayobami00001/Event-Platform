@@ -16,6 +16,22 @@ export const CREATE_EVENT_MUTATION = `
   }
 `;
 
+export const UPDATE_MY_PROFILE_MUTATION = `
+  mutation UpdateMyProfile($input: UpdateProfileInput!) {
+    updateMyProfile(input: $input) {
+      id
+      fullName
+      email
+      phone
+      avatar
+      role
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const DELETE_EVENT_MUTATION = `
   mutation DeleteEvent($eventId: ID!) {
     deleteEvent(eventId: $eventId)

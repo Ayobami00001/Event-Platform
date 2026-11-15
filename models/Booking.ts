@@ -11,6 +11,9 @@ export interface IBooking extends Document {
   bookingStatus: BookingStatus;
   paymentStatus: PaymentStatus;
   paymentReference?: string;
+  currency?: "NGN";
+  reservationExpiresAt?: Date;
+  paidAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,13 +57,28 @@ const bookingSchema = new Schema<IBooking>(
 
     paymentReference: {
       type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    currency: {
+      type: String,
+      enum: ["NGN"],
+      default: "NGN",
+    },
+
+    reservationExpiresAt: {
+      type: Date,
+    },
+
+    paidAt: {
+      type: Date,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Booking: Model<IBooking> =
-  mongoose.models.Booking ||
-  mongoose.model<IBooking>("Booking", bookingSchema);
+  mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);
 
 export default Booking;

@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="mt-20 rounded-t-[3rem] bg-slate-100">
+    <footer className="mt-20  rounded-t-[3rem] bg-slate-100">
       <div className="mx-auto flex max-w-screen-2xl flex-col items-center justify-between gap-6 px-8 py-12 md:flex-row">
         <div className="flex flex-col items-center gap-3 md:items-start">
           <a href="/" className="text-lg font-bold text-slate-900">

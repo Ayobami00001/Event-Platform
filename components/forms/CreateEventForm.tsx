@@ -31,7 +31,7 @@ export default function CreateEventForm() {
     mode: "PHYSICAL" as EventMode,
     pricing: "FREE" as EventPricing,
     price: "",
-    currency: "USD",
+    currency: "NGN",
     startDate: "",
     endDate: "",
     startTime: "",
@@ -151,7 +151,7 @@ export default function CreateEventForm() {
       mode: form.mode,
       pricing: form.pricing,
       price: form.pricing === "PAID" ? Number(form.price) : 0,
-      currency: form.currency.trim() || "USD",
+      currency: "NGN",
       startDate: form.startDate,
       endDate: form.endDate,
       startTime: form.startTime || null,
@@ -184,7 +184,7 @@ export default function CreateEventForm() {
         mode: "PHYSICAL",
         pricing: "FREE",
         price: "",
-        currency: "USD",
+        currency: "NGN",
         startDate: "",
         endDate: "",
         startTime: "",
@@ -332,7 +332,7 @@ export default function CreateEventForm() {
             <input
               name="currency"
               value={form.currency}
-              placeholder="USD"
+              placeholder="NGN"
               onChange={handleChange}
               className="w-full p-3 border rounded-lg outline-none"
             />

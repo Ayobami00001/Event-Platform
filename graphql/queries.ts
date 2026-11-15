@@ -50,7 +50,24 @@ export const GET_EVENT_BY_SLUG_QUERY = `
         id
         fullName
         email
+        avatar
       }
+    }
+  }
+`;
+
+export const GET_MY_PROFILE_QUERY = `
+  query GetMyProfile {
+    me {
+      id
+      fullName
+      email
+      phone
+      avatar
+      role
+      status
+      createdAt
+      updatedAt
     }
   }
 `;

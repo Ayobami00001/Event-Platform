@@ -4,10 +4,21 @@ import cloudinary from "@/lib/cloudinary";
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File;
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        { error: "Please upload a valid image file." },
+        { status: 400 },
+      );
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Only image files are allowed." },
+        { status: 400 },
+      );
     }
 
     const bytes = await file.arrayBuffer();
@@ -25,10 +36,14 @@ export async function POST(req: Request) {
     return NextResponse.json({
       url: uploadResult.secure_url,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("UPLOAD ERROR:", error);
+
     return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 }
+      {
+        error: error.message || "Upload failed",
+      },
+      { status: 500 },
     );
   }
 }

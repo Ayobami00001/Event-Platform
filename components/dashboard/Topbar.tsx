@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 type UserRole = "USER" | "ORGANIZER" | "ADMIN" | null;
 
@@ -28,14 +28,14 @@ export default function Topbar({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [role, setRole] = useState<UserRole>(null);
-  
 
-  useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    setRole(getRoleFromToken(token));
-  }, []);
+ const token = useSyncExternalStore(
+  subscribeToAuth,
+  getAuthSnapshot,
+  getServerAuthSnapshot
+);
+
+const role = getRoleFromToken(token);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,13 +73,15 @@ export default function Topbar({
   };
 
   const getProfileHref = () => {
-    if (role === "ADMIN") return "/admin/dashboard";
-    if (role === "ORGANIZER") return "/organizer/dashboard";
-    return "/profile";
-  };
+  if (role === "ADMIN") return "/admin/dashboard";
+  if (role === "ORGANIZER") return "/organizer/profile";
+  if (role === "USER") return "/user/profile";
+  return "/user/profile";
+};
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     localStorage.removeItem("remembered_email");
     setDropdownOpen(false);
     router.push("/login");
@@ -187,4 +189,19 @@ export default function Topbar({
       </div>
     </header>
   );
+}
+function subscribeToAuth(callback: () => void) {
+  window.addEventListener("storage", callback);
+
+  return () => {
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function getAuthSnapshot() {
+  return localStorage.getItem("token");
+}
+
+function getServerAuthSnapshot() {
+  return null;
 }
