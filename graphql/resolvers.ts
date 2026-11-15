@@ -7,6 +7,7 @@ import Event from "@/models/Event";
 import Booking from "@/models/Booking";
 import Ticket from "@/models/Ticket";
 import { randomUUID } from "crypto";
+import { confirmPaystackBooking } from "@/lib/payments/confirmPaystackBooking";
 
 type JwtUser = {
   id: string;
@@ -1449,166 +1450,38 @@ export const resolvers = {
       };
     },
 
-    verifyPayment: async (
-      _parent: unknown,
-      args: { reference: string },
-      context: GraphQLContext,
-    ) => {
-      if (!context.user || context.user.role !== "USER") {
-        throw new Error("Please log in to verify your payment.");
-      }
+   verifyPayment: async (
+  _parent: unknown,
+  args: { reference: string },
+  context: GraphQLContext,
+) => {
+  if (!context.user || context.user.role !== "USER") {
+    throw new Error("Please log in to verify your payment.");
+  }
 
-      const reference = args.reference.trim();
+  const reference = args.reference.trim();
 
-      if (!reference || !/^CNCG-[a-zA-Z0-9-]+$/.test(reference)) {
-        throw new Error("Invalid payment reference.");
-      }
+  if (!/^CNCG-[a-zA-Z0-9-]+$/.test(reference)) {
+    throw new Error("Invalid payment reference.");
+  }
 
-      const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  await connectDB();
 
-      if (!secretKey) {
-        throw new Error("Paystack is not configured.");
-      }
+  const booking = await Booking.findOne({
+    paymentReference: reference,
+    user: context.user.id,
+  });
 
-      await connectDB();
+  if (!booking) {
+    throw new Error("Booking not found for this customer.");
+  }
 
-      // The reference must belong to the logged-in customer.
-      const booking = await Booking.findOne({
-        paymentReference: reference,
-        user: context.user.id,
-      });
+  await confirmPaystackBooking(reference);
 
-      if (!booking) {
-        throw new Error("No booking found for this payment reference.");
-      }
-
-      if (booking.bookingStatus === "CANCELLED") {
-        throw new Error(
-          "This booking was cancelled. Please contact support if you were charged.",
-        );
-      }
-
-      if (booking.currency !== "NGN") {
-        throw new Error("Unsupported payment currency.");
-      }
-
-      // Verify independently with Paystack.
-      const response = await fetch(
-        `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${secretKey}`,
-          },
-          cache: "no-store",
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Unable to verify payment with Paystack.");
-      }
-
-      const result = await response.json();
-      const payment = result.data;
-
-      if (!result.status || !payment) {
-        throw new Error("Payment verification failed.");
-      }
-
-      if (payment.status !== "success") {
-        throw new Error(
-          `Payment has not succeeded. Current status: ${payment.status}`,
-        );
-      }
-
-      const expectedAmount = Math.round(booking.totalPrice * 100);
-
-      if (
-        payment.reference !== reference ||
-        payment.currency !== "NGN" ||
-        !Number.isSafeInteger(expectedAmount) ||
-        expectedAmount <= 0 ||
-        payment.amount !== expectedAmount
-      ) {
-        throw new Error("Payment details do not match this booking.");
-      }
-
-      const metadata =
-        typeof payment.metadata === "string"
-          ? JSON.parse(payment.metadata)
-          : payment.metadata;
-
-      if (
-        metadata?.bookingId !== String(booking._id) ||
-        metadata?.userId !== context.user.id
-      ) {
-        throw new Error("Payment booking details do not match.");
-      }
-
-      const customer = await User.findById(context.user.id);
-
-      if (
-        !customer ||
-        payment.customer?.email?.toLowerCase() !== customer.email.toLowerCase()
-      ) {
-        throw new Error("Payment customer details do not match.");
-      }
-
-      // Update only a booking that is still pending and unpaid.
-      if (
-        booking.bookingStatus === "PENDING" &&
-        booking.paymentStatus === "UNPAID"
-      ) {
-        await Booking.findOneAndUpdate(
-          {
-            _id: booking._id,
-            bookingStatus: "PENDING",
-            paymentStatus: "UNPAID",
-            paymentReference: reference,
-          },
-          {
-            $set: {
-              bookingStatus: "CONFIRMED",
-              paymentStatus: "PAID",
-              paidAt: payment.paid_at ? new Date(payment.paid_at) : new Date(),
-            },
-          },
-        );
-      }
-
-      const confirmedBooking = await Booking.findById(booking._id);
-
-      if (
-        !confirmedBooking ||
-        confirmedBooking.bookingStatus !== "CONFIRMED" ||
-        confirmedBooking.paymentStatus !== "PAID"
-      ) {
-        throw new Error(
-          "Unable to confirm this booking. Please contact support.",
-        );
-      }
-
-      // Deterministic ticket codes prevent duplicate ticket issuance.
-      // The ticketCode field must have a unique MongoDB index.
-      for (let index = 1; index <= confirmedBooking.quantity; index++) {
-        const ticketCode = `CNCG-${confirmedBooking._id}-${index}`;
-
-        await Ticket.updateOne(
-          { ticketCode },
-          {
-            $setOnInsert: {
-              booking: confirmedBooking._id,
-              ticketCode,
-            },
-          },
-          { upsert: true },
-        );
-      }
-
-      return await Booking.findById(confirmedBooking._id)
-        .populate("user")
-        .populate("event");
-    },
+  return await Booking.findById(booking._id)
+    .populate("user")
+    .populate("event");
+},
 
     cancelBooking: async (
       _parent: unknown,
